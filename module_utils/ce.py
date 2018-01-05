@@ -165,15 +165,17 @@ class Cli:
         rc, out, err = self.exec_command('mmi-mode enable')
         if rc != 0:
             self._module.fail_json(msg='unable to set mmi-mode enable', output=err)
-        rc, out, err = self.exec_command('system-view immediately')
+        rc, out, err = self.exec_command('system-view')
         if rc != 0:
             self._module.fail_json(msg='unable to enter system-view', output=err)
 
         for cmd in config:
             rc, out, err = self.exec_command(cmd)
             if rc != 0:
+                self.exec_command('clear configuration candidate')
                 self._module.fail_json(msg=cli_err_msg(cmd.strip(), err))
 
+        self.exec_command('commit description "commited by Ansible"')
         self.exec_command('return')
 
 
@@ -336,8 +338,10 @@ class Netconf(object):
         con_obj = None
 
         try:
-            con_obj = self.mc.edit_config(target='running', config=xml_str)
+            con_obj = self.mc.edit_config(target='candidate', config=xml_str)
+            self.mc.commit()
         except RPCError:
+            self.mc.discard_changes()
             err = get_exception()
             self._module.fail_json(msg='Error: %s' % str(err).replace("\r\n", ""))
 
