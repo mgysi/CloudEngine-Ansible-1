@@ -267,11 +267,11 @@ CE_NC_XML_MERGE_INTF_L2ENABLE = """
 </ethernet>
 """
 
-ADMIN_STATE_TYPE = ('ge', '10ge', '25ge', '4x10ge', '40ge', '100ge',
+ADMIN_STATE_TYPE = ('ge', 'gigabitethernet', '10ge', '25ge', '4x10ge', '40ge', '100ge',
                     'vlanif', 'meth', 'eth-trunk', 'vbdif', 'tunnel',
                     'ethernet', 'stack-port')
 
-SWITCH_PORT_TYPE = ('ge', '10ge', '25ge',
+SWITCH_PORT_TYPE = ('ge', 'gigabitethernet', '10ge', '25ge',
                     '4x10ge', '40ge', '100ge', 'eth-trunk')
 
 
@@ -285,6 +285,8 @@ def get_interface_type(interface):
 
     if interface.upper().startswith('GE'):
         iftype = 'ge'
+    if interface.upper().startswith('GIGABITETHERNET'):
+        iftype = 'gigabitethernet'
     elif interface.upper().startswith('10GE'):
         iftype = '10ge'
     elif interface.upper().startswith('25GE'):
@@ -393,6 +395,12 @@ class Interface(object):
             r'<isL2SwitchPort>(.*)</isL2SwitchPort>.*\s*<ifAdminStatus>'
             r'(.*)</ifAdminStatus>.*\s*<ifMtu>(.*)</ifMtu>.*', recv_xml)
 
+        intf.extend(re.findall(
+            r'.*<ifName>(.*)</ifName>.*\s*<ifPhyType>(.*)</ifPhyType>.*\s*'
+            r'<ifNumber>(.*)</ifNumber>.*\s*<ifDescr/>().*\s*'
+            r'<isL2SwitchPort>(.*)</isL2SwitchPort>.*\s*<ifAdminStatus>'
+            r'(.*)</ifAdminStatus>.*\s*<ifMtu>(.*)</ifMtu>.*', recv_xml))
+
         for tmp in intf:
             if tmp[1]:
                 if not intfs_info.get(tmp[1].lower()):
@@ -422,6 +430,16 @@ class Interface(object):
             r'<isL2SwitchPort>(.*)</isL2SwitchPort>.*\s*'
             r'<ifAdminStatus>(.*)</ifAdminStatus>.*\s*'
             r'<ifMtu>(.*)</ifMtu>.*', recv_xml)
+
+        if not intf:
+	    intf = re.findall(
+                r'.*<ifName>(.*)</ifName>.*\s*'
+                r'<ifPhyType>(.*)</ifPhyType>.*\s*'
+                r'<ifNumber>(.*)</ifNumber>.*\s*'
+                r'<ifDescr/>().*\s*'
+                r'<isL2SwitchPort>(.*)</isL2SwitchPort>.*\s*'
+                r'<ifAdminStatus>(.*)</ifAdminStatus>.*\s*'
+                r'<ifMtu>(.*)</ifMtu>.*', recv_xml)
 
         if intf:
             intf_info = dict(ifName=intf[0][0], ifPhyType=intf[0][1],
